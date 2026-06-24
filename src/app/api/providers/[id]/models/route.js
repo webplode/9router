@@ -6,6 +6,12 @@ import { refreshGoogleToken, updateProviderCredentials } from "@/sse/services/to
 import { resolveOllamaLocalHost } from "open-sse/config/providers.js";
 import { resolveKiroModels } from "open-sse/services/kiroModels.js";
 import { resolveQoderModels } from "open-sse/services/qoderModels.js";
+import {
+  buildOpenAIFallbackModelsConfig,
+  connectionSupportsModelsImport,
+  providerIsKnownRegistryId,
+  resolveRegistryOpenAIModelsUrl,
+} from "open-sse/services/providerModelsImport.js";
 
 const GEMINI_CLI_MODELS_URL = "https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels";
 
@@ -447,10 +453,31 @@ export async function GET(request, { params }) {
       });
     }
 
-    const config = PROVIDER_MODELS_CONFIG[connection.provider];
+    let config = PROVIDER_MODELS_CONFIG[connection.provider];
     if (!config) {
+      const fallbackUrl = resolveRegistryOpenAIModelsUrl(connection.provider);
+      if (fallbackUrl) {
+        config = buildOpenAIFallbackModelsConfig(fallbackUrl, connection.provider);
+      }
+    }
+    if (!config && providerIsKnownRegistryId(connection.provider)) {
+      const psd = connection.providerSpecificData || {};
+      const customBase = typeof psd.baseUrl === "string" ? psd.baseUrl.trim() : "";
+      if (customBase) {
+        const derived = resolveRegistryOpenAIModelsUrl(connection.provider)
+          || (customBase.endsWith("/chat/completions")
+            ? customBase.replace(/\/chat\/completions$/, "/models")
+            : `${customBase.replace(/\/$/, "")}/models`);
+        if (derived) config = buildOpenAIFallbackModelsConfig(derived, connection.provider);
+      }
+    }
+    if (!config) {
+      const hint = connectionSupportsModelsImport(connection);
       return NextResponse.json(
-        { error: `Provider ${connection.provider} does not support models listing` },
+        {
+          error: hint.message || `Provider ${connection.provider} does not support models listing`,
+          code: hint.reason || "not_supported",
+        },
         { status: 400 }
       );
     }
@@ -472,7 +499,10 @@ export async function GET(request, { params }) {
     // Get auth token
     const token = connection.providerSpecificData?.copilotToken || connection.accessToken || connection.apiKey;
     if (!token) {
-      return NextResponse.json({ error: "No valid token found" }, { status: 401 });
+      return NextResponse.json(
+        { error: "No API key or OAuth token on this connection — add credentials to import models.", code: "auth_missing" },
+        { status: 401 }
+      );
     }
 
     // Build request URL
@@ -506,7 +536,11 @@ export async function GET(request, { params }) {
       const errorText = await response.text();
       console.log(`Error fetching models from ${connection.provider}:`, errorText);
       return NextResponse.json(
-        { error: `Failed to fetch models: ${response.status}` },
+        {
+          error: `Provider returned HTTP ${response.status} from models endpoint. Check API key and base URL.`,
+          code: "upstream_error",
+          status: response.status,
+        },
         { status: response.status }
       );
     }

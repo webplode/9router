@@ -10,6 +10,10 @@ import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
 import { handleComboChat } from "open-sse/services/combo.js";
 import * as log from "../utils/logger.js";
+import {
+  resolveAggressiveRetryForProvider,
+  handlePassthroughRetryAfterFallback,
+} from "@/sse/services/compatibleRetry.js";
 
 // Derived from providers.js: any TTS provider not noAuth requires stored credentials
 const CREDENTIALED_PROVIDERS = new Set(
@@ -69,6 +73,7 @@ async function handleSingleModelTts(body, modelStr, responseFormat, language) {
   if (!modelInfo.provider) return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid model format");
 
   const { provider, model } = modelInfo;
+  const aggressiveRetry = await resolveAggressiveRetryForProvider(provider);
   log.info("ROUTING", `Provider: ${provider}, Voice: ${model}`);
 
   // noAuth providers — no credential needed
@@ -104,7 +109,16 @@ async function handleSingleModelTts(body, modelStr, responseFormat, language) {
 
     const { shouldFallback } = await markAccountUnavailable(credentials.connectionId, result.status, result.error, provider, model);
     if (shouldFallback) {
-      excludeConnectionIds.add(credentials.connectionId);
+      const action = handlePassthroughRetryAfterFallback({
+        aggressiveRetry,
+        provider,
+        excludeConnectionIds,
+        connectionId: credentials.connectionId,
+        result,
+        log,
+        tag: "TTS",
+      });
+      if (action === "return") return result.response || errorResponse(result.status, result.error);
       lastError = result.error;
       lastStatus = result.status;
       continue;

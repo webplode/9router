@@ -1,6 +1,8 @@
 import { getProviderConnections, validateApiKey, updateProviderConnection, getSettings } from "@/lib/localDb";
 import { resolveConnectionProxyConfig } from "@/lib/network/connectionProxy";
 import { formatRetryAfter, checkFallbackError, isModelLockActive, buildModelLockUpdate, getEarliestModelLockUntil } from "open-sse/services/accountFallback.js";
+import { isPassthroughNodeProvider } from "@/sse/services/compatibleRetry.js";
+import { getProviderNodeById } from "@/models/index.js";
 import { MAX_RATE_LIMIT_COOLDOWN_MS } from "open-sse/config/errorConfig.js";
 import { resolveProviderId, FREE_PROVIDERS } from "@/shared/constants/providers.js";
 import * as log from "../utils/logger.js";
@@ -60,10 +62,16 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
       return null;
     }
 
+    let skipModelLockForCompatible = false;
+    if (isPassthroughNodeProvider(providerId)) {
+      const node = await getProviderNodeById(providerId);
+      skipModelLockForCompatible = node?.retryWithoutModelLock === true;
+    }
+
     // Filter out model-locked and excluded connections
     const availableConnections = connections.filter(c => {
       if (excludeSet.has(c.id)) return false;
-      if (isModelLockActive(c, model)) return false;
+      if (!skipModelLockForCompatible && isModelLockActive(c, model)) return false;
       return true;
     });
 
@@ -218,7 +226,13 @@ export async function markAccountUnavailable(connectionId, status, errorText, pr
   if (!shouldFallback) return { shouldFallback: false, cooldownMs: 0 };
 
   const reason = typeof errorText === "string" ? errorText.slice(0, 100) : "Provider error";
-  const lockUpdate = buildModelLockUpdate(model, cooldownMs);
+  let lockUpdate = buildModelLockUpdate(model, cooldownMs);
+  if (provider && isPassthroughNodeProvider(provider)) {
+    const node = await getProviderNodeById(provider);
+    if (node?.retryWithoutModelLock === true) {
+      lockUpdate = {};
+    }
+  }
 
   await updateProviderConnection(connectionId, {
     ...lockUpdate,

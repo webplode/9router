@@ -32,6 +32,11 @@ const nextConfig = {
     serverComponentsHmrCache: true,
   },
   webpack: (config, { isServer }) => {
+    // Optional native module — resolved at runtime in driver.js / cursor auto-import
+    config.externals = config.externals || [];
+    if (Array.isArray(config.externals)) {
+      config.externals.push("better-sqlite3");
+    }
     // Ignore fs/path modules in browser bundle
     if (!isServer) {
       config.resolve.fallback = {

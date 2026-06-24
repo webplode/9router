@@ -6,7 +6,7 @@ export async function PUT(request, { params }) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, prefix, apiType, baseUrl } = body;
+    const { name, prefix, apiType, baseUrl, retryWithoutModelLock, maxRetriesOnError } = body;
     const node = await getProviderNodeById(id);
 
     if (!node) {
@@ -56,6 +56,16 @@ export async function PUT(request, { params }) {
 
     if (node.type === "openai-compatible") {
       updates.apiType = apiType;
+    }
+
+    if (node.type === "openai-compatible" || node.type === "anthropic-compatible" || node.type === "custom-embedding") {
+      if (retryWithoutModelLock !== undefined) {
+        updates.retryWithoutModelLock = retryWithoutModelLock === true;
+      }
+      if (maxRetriesOnError !== undefined) {
+        const n = Number(maxRetriesOnError);
+        updates.maxRetriesOnError = Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 10;
+      }
     }
 
     const updated = await updateProviderNode(id, updates);

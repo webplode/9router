@@ -1,0 +1,249 @@
+{
+  "generatedAt": "2026-06-24T03:07:28.227Z",
+  "command": "cd tests && NODE_PATH=./node_modules ./node_modules/.bin/vitest run --reporter=json --outputFile=/tmp/9router-vitest-final.json --config ./vitest.config.js",
+  "numTotalTestSuites": 347,
+  "numPassedTestSuites": 316,
+  "numFailedTestSuites": 31,
+  "numTotalTests": 1024,
+  "numPassedTests": 938,
+  "numFailedTests": 34,
+  "numPendingTests": 52,
+  "failedFiles": 15,
+  "success": false,
+  "failed": [
+    {
+      "file": "tests/translator/golden-url-header.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "GOLDEN buildHeaders (default executor providers) cline → headers (apiKey / oauth)",
+          "message": "Error: Snapshot `GOLDEN buildHeaders (default executor providers) > cline → headers (apiKey / oauth) 1` mismatched"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/antigravity-mitm.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "Antigravity MITM model handling flags the out-of-box agent/Default model mandatory",
+          "message": "AssertionError: expected undefined to be true // Object.is equality"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/claude-header-forwarding.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "proxyAwareFetch — api.anthropic.com routing routes api.anthropic.com to gotScraping (non-streaming) and returns ok response",
+          "message": "AssertionError: expected \"vi.fn()\" to be called once, but got 0 times"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/codex-image-fetch.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "CodexExecutor image handling fetches 1MB remote image and inlines it as base64 data URI",
+          "message": "AssertionError: expected false to be true // Object.is equality"
+        },
+        {
+          "name": "CodexExecutor image handling execute() prefetches images before sending to upstream",
+          "message": "AssertionError: expected false to be true // Object.is equality"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/combo-autoswitch.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "detectRequiredCapabilities web_search tool -> search",
+          "message": "AssertionError: expected false to be true // Object.is equality"
+        },
+        {
+          "name": "reorderByCapabilities keeps order when no model matches",
+          "message": "AssertionError: expected [ 'deepseek/deepseek-chat', …(1) ] to be [ 'deepseek/deepseek-chat', …(1) ] // Object.is equality"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/db-benchmark.test.js",
+      "kind": "suite-load",
+      "failures": [
+        {
+          "name": "Suite load failure",
+          "message": "Cannot find package 'lowdb' imported from /Users/iznogoud/Desktop/Projects-AI/Webplode/cpab-project/9router/tests/unit/db-benchmark.test.js"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/embeddings.cloud.test.js",
+      "kind": "suite-load",
+      "failures": [
+        {
+          "name": "Suite load failure",
+          "message": "Cannot find module '/cloud/src/handlers/embeddings.js' imported from /Users/iznogoud/Desktop/Projects-AI/Webplode/cpab-project/9router/tests/unit/embeddings.cloud.test.js"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/executor-const-guard.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "antigravity retry (intentional change: 429=6, 503=3) 429 attempts = 6",
+          "message": "AssertionError: expected 3 to be 6 // Object.is equality"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/image-fetch-hardening.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "fetchImageAsBase64 hardening accepts valid PNG from public host",
+          "message": "AssertionError: expected null not to be null"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/kiro-model-slots.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "Kiro MITM model slots offers a mappable slot for the agent default model id 'auto'",
+          "message": "AssertionError: expected undefined to be truthy"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/mimo-free.live.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "MiMo Free anti-abuse gate (live) chat WITH Chrome User-Agent → 200",
+          "message": "Error: STACK_TRACE_ERROR"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/oauth-cursor-auto-import.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "GET /api/oauth/cursor/auto-import returns not-found when no macOS cursor db paths are accessible",
+          "message": "AssertionError: expected 'Cursor database not found. Checked lo…' to contain 'Cursor database not found in known ma…'"
+        },
+        {
+          "name": "GET /api/oauth/cursor/auto-import returns descriptive error if macOS db file exists but cannot be opened",
+          "message": "AssertionError: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string"
+        },
+        {
+          "name": "GET /api/oauth/cursor/auto-import extracts tokens using exact keys",
+          "message": "AssertionError: expected false to be true // Object.is equality"
+        },
+        {
+          "name": "GET /api/oauth/cursor/auto-import unwraps JSON-encoded string values",
+          "message": "AssertionError: expected false to be true // Object.is equality"
+        },
+        {
+          "name": "GET /api/oauth/cursor/auto-import falls back to fuzzy key matching on macOS when exact keys are missing",
+          "message": "AssertionError: expected false to be true // Object.is equality"
+        },
+        {
+          "name": "GET /api/oauth/cursor/auto-import returns login-prompt error when tokens are missing even after fallback",
+          "message": "AssertionError: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string"
+        },
+        {
+          "name": "GET /api/oauth/cursor/auto-import linux uses single hardcoded path and original error message",
+          "message": "AssertionError: expected 'Cursor database not found. Checked lo…' to be 'Cursor database not found. Make sure …' // Object.is equality"
+        },
+        {
+          "name": "GET /api/oauth/cursor/auto-import unsupported platform returns 400",
+          "message": "AssertionError: expected 200 to be 400 // Object.is equality"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/openai-to-claude.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "openaiToClaudeResponse omits empty Read pages tool argument before emitting Claude input deltas",
+          "message": "AssertionError: expected undefined to be defined"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/rtk.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "RTK flag default off, toggle works",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (disabled) returns null when disabled",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) compresses OpenAI tool message (string content)",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) compresses Claude string-form tool_result",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) compresses Claude array-form tool_result text parts",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) skips is_error tool_result",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) skips below MIN_COMPRESS_SIZE (<500 bytes)",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) never produces empty content (R14 guard)",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) skips when body has no messages",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        },
+        {
+          "name": "compressMessages (enabled) handles mix of messages without crashing",
+          "message": "TypeError: (0 , __vite_ssr_import_1__.setRtkEnabled) is not a function"
+        }
+      ]
+    },
+    {
+      "file": "tests/unit/translator-request-normalization.test.js",
+      "kind": "assertions",
+      "failures": [
+        {
+          "name": "request normalization claudeToOpenAIRequest flattens text-only content arrays into string",
+          "message": "AssertionError: expected [ { type: 'text', text: 'hi' }, …(1) ] to be 'hi\\nthere' // Object.is equality"
+        },
+        {
+          "name": "request normalization filterToOpenAIFormat flattens text-only arrays to string",
+          "message": "AssertionError: expected [ { type: 'text', text: 'a' }, …(1) ] to be 'a\\nb' // Object.is equality"
+        },
+        {
+          "name": "request normalization translateRequest keeps /v1/messages Claude->OpenAI text payloads string-safe",
+          "message": "AssertionError: expected 'object' to be 'string' // Object.is equality"
+        },
+        {
+          "name": "request normalization parseSSELine supports provider raw NDJSON stream lines",
+          "message": "AssertionError: expected null to deeply equal { model: 'gpt-oss:120b', …(2) }"
+        }
+      ]
+    }
+  ]
+}

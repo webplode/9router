@@ -38,7 +38,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   const { provider, model } = modelInfo;
   const requestStartTime = Date.now();
 
-  const sourceFormat = sourceFormatOverride || detectFormat(body);
+  const sourceFormat = sourceFormatOverride ?? detectFormat(body);
 
   // Check for bypass patterns (warmup, skip, cc naming)
   const bypassResponse = handleBypassRequest(body, model, userAgent, ccFilterNaming);

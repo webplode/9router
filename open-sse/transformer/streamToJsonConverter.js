@@ -29,6 +29,13 @@ function processSSEMessage(msg, state) {
     state.items.set(parsed.output_index ?? 0, parsed.item);
   } else if (eventType === "response.completed" || eventType === "response.done") {
     state.status = "completed";
+    if (parsed.response?.id) state.responseId = parsed.response.id;
+    if (parsed.response?.created_at) state.created = parsed.response.created_at;
+    if (Array.isArray(parsed.response?.output)) {
+      parsed.response.output.forEach((item, index) => {
+        if (!state.items.has(index)) state.items.set(index, item);
+      });
+    }
     if (parsed.response?.usage) {
       state.usage.input_tokens = parsed.response.usage.input_tokens || 0;
       state.usage.output_tokens = parsed.response.usage.output_tokens || 0;

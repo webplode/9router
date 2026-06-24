@@ -9,6 +9,10 @@ import { errorResponse, unavailableResponse } from "open-sse/utils/error.js";
 import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
 import * as log from "../utils/logger.js";
+import {
+  resolveAggressiveRetryForProvider,
+  handlePassthroughRetryAfterFallback,
+} from "@/sse/services/compatibleRetry.js";
 
 // Providers requiring credentials for STT
 const CREDENTIALED_PROVIDERS = new Set(
@@ -43,6 +47,7 @@ export async function handleStt(request) {
   if (!modelInfo.provider) return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid model format");
 
   const { provider, model } = modelInfo;
+  const aggressiveRetry = await resolveAggressiveRetryForProvider(provider);
   log.info("ROUTING", `Provider: ${provider}, Model: ${model}`);
 
   // noAuth providers
@@ -78,7 +83,16 @@ export async function handleStt(request) {
 
     const { shouldFallback } = await markAccountUnavailable(credentials.connectionId, result.status, result.error, provider, model);
     if (shouldFallback) {
-      excludeConnectionIds.add(credentials.connectionId);
+      const action = handlePassthroughRetryAfterFallback({
+        aggressiveRetry,
+        provider,
+        excludeConnectionIds,
+        connectionId: credentials.connectionId,
+        result,
+        log,
+        tag: "STT",
+      });
+      if (action === "return") return result.response || errorResponse(result.status, result.error);
       lastError = result.error;
       lastStatus = result.status;
       continue;

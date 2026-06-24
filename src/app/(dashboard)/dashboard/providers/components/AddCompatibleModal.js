@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Badge, Button, Input, Modal, Select } from "@/shared/components";
+import { Badge, Button, Input, Modal, Select, Toggle } from "@/shared/components";
 
 const VARIANT_CONFIG = {
   openai: {
@@ -41,6 +41,8 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
     prefix: "",
     ...(config.hasApiType ? { apiType: "chat" } : {}),
     baseUrl: config.defaultBaseUrl,
+    retryWithoutModelLock: true,
+    maxRetriesOnError: "10",
   });
 
   const [formData, setFormData] = useState(initialFormData);
@@ -74,6 +76,8 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
           ...(config.hasApiType ? { apiType: formData.apiType } : {}),
           baseUrl: formData.baseUrl,
           type: config.type,
+          retryWithoutModelLock: formData.retryWithoutModelLock,
+          maxRetriesOnError: Number(formData.maxRetriesOnError) || 10,
         }),
       });
       const data = await res.json();
@@ -165,6 +169,23 @@ function AddCompatibleModal({ variant, isOpen, onClose, onCreated }) {
           placeholder={config.defaultBaseUrl}
           hint={config.baseUrlHint}
         />
+        <Toggle
+          label="Retry without model lock"
+          checked={formData.retryWithoutModelLock}
+          onChange={(checked) => setFormData({ ...formData, retryWithoutModelLock: checked })}
+          hint="On errors, keep retrying the same API key instead of cooling down this model on the connection."
+        />
+        {formData.retryWithoutModelLock && (
+          <Input
+            label="Max retries per request"
+            type="number"
+            min={1}
+            max={100}
+            value={formData.maxRetriesOnError}
+            onChange={(e) => setFormData({ ...formData, maxRetriesOnError: e.target.value })}
+            hint="Caps how many times one chat request will retry on the same connection (default 10)."
+          />
+        )}
         <Input
           label="API Key (for Check)"
           type="password"

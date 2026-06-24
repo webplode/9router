@@ -27,6 +27,11 @@ function nodeToRow(n) {
   };
 }
 
+function normalizeMaxRetriesOnError(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 10;
+}
+
 function upsert(db, n) {
   const r = nodeToRow(n);
   db.run(
@@ -62,6 +67,8 @@ export async function createProviderNode(data) {
     prefix: data.prefix,
     apiType: data.apiType,
     baseUrl: data.baseUrl,
+    retryWithoutModelLock: data.retryWithoutModelLock === true,
+    maxRetriesOnError: normalizeMaxRetriesOnError(data.maxRetriesOnError),
     createdAt: now,
     updatedAt: now,
   };

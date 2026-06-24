@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Button, Badge, Input, Modal, Select } from "@/shared/components";
+import { Button, Badge, Input, Modal, Select, Toggle } from "@/shared/components";
 
 export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose, isAnthropic }) {
   const [formData, setFormData] = useState({
@@ -10,6 +10,8 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
     prefix: "",
     apiType: "chat",
     baseUrl: "https://api.openai.com/v1",
+    retryWithoutModelLock: false,
+    maxRetriesOnError: "10",
   });
   const [saving, setSaving] = useState(false);
   const [checkKey, setCheckKey] = useState("");
@@ -24,6 +26,8 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
         prefix: node.prefix || "",
         apiType: node.apiType || "chat",
         baseUrl: node.baseUrl || (isAnthropic ? "https://api.anthropic.com/v1" : "https://api.openai.com/v1"),
+        retryWithoutModelLock: node.retryWithoutModelLock === true,
+        maxRetriesOnError: String(node.maxRetriesOnError ?? 10),
       });
     }
   }, [node, isAnthropic]);
@@ -41,6 +45,8 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
         name: formData.name,
         prefix: formData.prefix,
         baseUrl: formData.baseUrl,
+        retryWithoutModelLock: formData.retryWithoutModelLock,
+        maxRetriesOnError: Number(formData.maxRetriesOnError) || 10,
       };
       if (!isAnthropic) {
         payload.apiType = formData.apiType;
@@ -107,6 +113,22 @@ export default function EditCompatibleNodeModal({ isOpen, node, onSave, onClose,
           placeholder={isAnthropic ? "https://api.anthropic.com/v1" : "https://api.openai.com/v1"}
           hint={`Use the base URL (ending in /v1) for your ${isAnthropic ? "Anthropic" : "OpenAI"}-compatible API.`}
         />
+        <Toggle
+          label="Retry without model lock"
+          checked={formData.retryWithoutModelLock}
+          onChange={(checked) => setFormData({ ...formData, retryWithoutModelLock: checked })}
+          hint="Keep retrying on the same connection instead of applying per-model cooldown locks."
+        />
+        {formData.retryWithoutModelLock && (
+          <Input
+            label="Max retries per request"
+            type="number"
+            min={1}
+            max={100}
+            value={formData.maxRetriesOnError}
+            onChange={(e) => setFormData({ ...formData, maxRetriesOnError: e.target.value })}
+          />
+        )}
         <div className="flex gap-2">
           <Input
             label="API Key (for Check)"

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
 import { Button } from "@/shared/components";
+import ImportModelsFromProviderButton from "@/shared/components/ImportModelsFromProviderButton";
 import { getProviderCustomModelRows } from "@/shared/utils/providerCustomModels";
 
 function PassthroughModelRow({ modelId, fullModel, copied, onCopy, onDeleteAlias, onTest, testStatus, isTesting }) {
@@ -87,7 +88,7 @@ PassthroughModelRow.propTypes = {
   isTesting: PropTypes.bool,
 };
 
-export default function PassthroughModelsSection({ providerAlias, modelAliases, customModels, copied, onCopy, onDeleteAlias, onAddCustomModel, onDeleteCustomModel }) {
+export default function PassthroughModelsSection({ providerAlias, providerId = "", modelAliases, customModels, copied, onCopy, onDeleteAlias, onAddCustomModel, onDeleteCustomModel, connections = [] }) {
   const [newModel, setNewModel] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -141,6 +142,13 @@ export default function PassthroughModelsSection({ providerAlias, modelAliases, 
         <Button size="sm" icon="add" onClick={handleAdd} disabled={!newModel.trim() || adding}>
           {adding ? "Adding..." : "Add"}
         </Button>
+        <ImportModelsFromProviderButton
+          connections={connections}
+          providerStorageAlias={providerAlias}
+          providerId={providerId}
+          onAddCustomModel={onAddCustomModel}
+          getExistingModelIds={() => allModels.map((m) => m.id)}
+        />
       </div>
 
       {/* Models list */}
@@ -171,4 +179,6 @@ PassthroughModelsSection.propTypes = {
   onDeleteAlias: PropTypes.func.isRequired,
   onAddCustomModel: PropTypes.func.isRequired,
   onDeleteCustomModel: PropTypes.func.isRequired,
+  providerId: PropTypes.string,
+  connections: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.string, isActive: PropTypes.bool })),
 };

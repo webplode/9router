@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Modal, Input, Button, Badge } from "@/shared/components";
+import { Modal, Input, Button, Badge, Toggle } from "@/shared/components";
 
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
 
@@ -13,6 +13,8 @@ export default function AddCustomEmbeddingModal({ isOpen, onClose, onCreated, on
     name: "",
     prefix: "",
     baseUrl: DEFAULT_BASE_URL,
+    retryWithoutModelLock: true,
+    maxRetriesOnError: "10",
   });
   const [submitting, setSubmitting] = useState(false);
   const [checkKey, setCheckKey] = useState("");
@@ -30,9 +32,17 @@ export default function AddCustomEmbeddingModal({ isOpen, onClose, onCreated, on
         name: node.name || "",
         prefix: node.prefix || "",
         baseUrl: node.baseUrl || DEFAULT_BASE_URL,
+        retryWithoutModelLock: node.retryWithoutModelLock === true,
+        maxRetriesOnError: String(node.maxRetriesOnError ?? 10),
       });
     } else {
-      setFormData({ name: "", prefix: "", baseUrl: DEFAULT_BASE_URL });
+      setFormData({
+        name: "",
+        prefix: "",
+        baseUrl: DEFAULT_BASE_URL,
+        retryWithoutModelLock: true,
+        maxRetriesOnError: "10",
+      });
     }
   }, [isOpen, isEdit, node]);
 
@@ -46,6 +56,8 @@ export default function AddCustomEmbeddingModal({ isOpen, onClose, onCreated, on
         name: formData.name,
         prefix: formData.prefix,
         baseUrl: formData.baseUrl,
+        retryWithoutModelLock: formData.retryWithoutModelLock,
+        maxRetriesOnError: Number(formData.maxRetriesOnError) || 10,
       };
       if (!isEdit) payload.type = "custom-embedding";
 
@@ -131,6 +143,22 @@ export default function AddCustomEmbeddingModal({ isOpen, onClose, onCreated, on
           placeholder="https://api.voyageai.com/v1"
           hint="Most embedding APIs are OpenAI-compatible: Voyage, Cohere, Jina, Mistral, Together..."
         />
+        <Toggle
+          label="Retry without model lock"
+          checked={formData.retryWithoutModelLock}
+          onChange={(checked) => setFormData({ ...formData, retryWithoutModelLock: checked })}
+          hint="On errors, keep retrying the same API key instead of per-model cooldown locks."
+        />
+        {formData.retryWithoutModelLock && (
+          <Input
+            label="Max retries per request"
+            type="number"
+            min={1}
+            max={100}
+            value={formData.maxRetriesOnError}
+            onChange={(e) => setFormData({ ...formData, maxRetriesOnError: e.target.value })}
+          />
+        )}
         <Input
           label="API Key (for Check)"
           type="password"

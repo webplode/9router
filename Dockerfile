@@ -5,6 +5,7 @@ WORKDIR /app
 
 FROM base AS builder
 
+# Native optional deps (better-sqlite3) + Tailwind/lightningcss platform binaries for multi-arch builds.
 RUN apk --no-cache upgrade && apk --no-cache add python3 make g++ linux-headers
 
 COPY package.json ./

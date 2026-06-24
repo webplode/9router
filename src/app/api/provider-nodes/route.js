@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, prefix, apiType, baseUrl, type } = body;
+    const { name, prefix, apiType, baseUrl, type, retryWithoutModelLock, maxRetriesOnError } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -57,6 +57,8 @@ export async function POST(request) {
         apiType,
         baseUrl: (baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl).trim(),
         name: name.trim(),
+        retryWithoutModelLock: retryWithoutModelLock === true,
+        maxRetriesOnError,
       });
       return NextResponse.json({ node }, { status: 201 });
     }
@@ -74,6 +76,8 @@ export async function POST(request) {
         prefix: prefix.trim(),
         baseUrl: sanitizedBaseUrl,
         name: name.trim(),
+        retryWithoutModelLock: retryWithoutModelLock === true,
+        maxRetriesOnError,
       });
       return NextResponse.json({ node }, { status: 201 });
     }
@@ -92,6 +96,8 @@ export async function POST(request) {
         prefix: prefix.trim(),
         baseUrl: sanitizedBaseUrl,
         name: name.trim(),
+        retryWithoutModelLock: retryWithoutModelLock === true,
+        maxRetriesOnError,
       });
       return NextResponse.json({ node }, { status: 201 });
     }

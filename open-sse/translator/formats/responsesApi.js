@@ -27,6 +27,9 @@ export function normalizeResponsesInput(input) {
  * Convert OpenAI Responses API format to standard chat completions format
  * Responses API uses: { input: [...], instructions: "..." }
  * Chat API uses: { messages: [...] }
+ *
+ * Note: Primary path is translateRequest(openai-responses → openai) via openai-responses.js.
+ * This helper remains for responsesHandler / legacy callers.
  */
 export function convertResponsesApiFormat(body) {
   if (!body.input) return body;
@@ -41,7 +44,6 @@ export function convertResponsesApiFormat(body) {
 
   // Group items by conversation turn
   let currentAssistantMsg = null;
-  let pendingToolCalls = [];
   let pendingToolResults = [];
 
   const inputItems = normalizeResponsesInput(body.input);

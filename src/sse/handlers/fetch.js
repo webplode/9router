@@ -14,6 +14,10 @@ import * as log from "../utils/logger.js";
 import { updateProviderCredentials, checkAndRefreshToken } from "../services/tokenRefresh.js";
 import { handleComboChat, getComboModelsFromData } from "open-sse/services/combo.js";
 import { assertPublicUrl } from "@/shared/utils/ssrfGuard.js";
+import {
+  resolveAggressiveRetryForProvider,
+  handlePassthroughRetryAfterFallback,
+} from "@/sse/services/compatibleRetry.js";
 
 /**
  * Handle web fetch (URL extraction) request for the SSE/Next.js server.
@@ -153,6 +157,8 @@ async function handleSingleProviderFetch(body, providerInput, request, apiKey, s
     return errorResponse(result.status || HTTP_STATUS.BAD_GATEWAY, result.error || "Fetch failed");
   }
 
+  const aggressiveRetry = await resolveAggressiveRetryForProvider(providerId);
+
   // Credential + fallback loop
   const excludeConnectionIds = new Set();
   let lastError = null;
@@ -210,8 +216,16 @@ async function handleSingleProviderFetch(body, providerInput, request, apiKey, s
     const { shouldFallback } = await markAccountUnavailable(credentials.connectionId, result.status, result.error, providerId);
 
     if (shouldFallback) {
-      log.warn("AUTH", `Account ${credentials.connectionName} unavailable (${result.status}), trying fallback`);
-      excludeConnectionIds.add(credentials.connectionId);
+      const action = handlePassthroughRetryAfterFallback({
+        aggressiveRetry,
+        provider: providerId,
+        excludeConnectionIds,
+        connectionId: credentials.connectionId,
+        result,
+        log,
+        tag: "FETCH",
+      });
+      if (action === "return") return errorResponse(result.status || HTTP_STATUS.BAD_GATEWAY, result.error || "Fetch failed");
       lastError = result.error;
       lastStatus = result.status;
       continue;

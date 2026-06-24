@@ -16,10 +16,14 @@ import { errorResponse, unavailableResponse } from "open-sse/utils/error.js";
 import { handleComboChat, handleFusionChat } from "open-sse/services/combo.js";
 import { handleBypassRequest } from "open-sse/utils/bypassHandler.js";
 import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
-import { detectFormatByEndpoint } from "open-sse/translator/formats.js";
+import { resolveSourceFormat } from "open-sse/handlers/pipeline.js";
 import * as log from "../utils/logger.js";
 import { updateProviderCredentials, checkAndRefreshToken } from "../services/tokenRefresh.js";
 import { getProjectIdForConnection } from "open-sse/services/projectId.js";
+import {
+  resolveAggressiveRetryForProvider,
+  handlePassthroughRetryAfterFallback,
+} from "@/sse/services/compatibleRetry.js";
 
 /**
  * Handle chat completion request
@@ -189,6 +193,8 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
 
   const { provider, model } = modelInfo;
 
+  const compatibleAggressiveRetry = await resolveAggressiveRetryForProvider(provider);
+
   // Log model routing (alias → actual model)
   if (modelStr !== `${provider}/${model}`) {
     log.info("ROUTING", `${modelStr} → ${provider}/${model}`);
@@ -260,8 +266,9 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       ponytailEnabled: !!chatSettings.ponytailEnabled,
       ponytailLevel: chatSettings.ponytailLevel || "full",
       providerThinking,
-      // Detect source format by endpoint + body
-      sourceFormatOverride: request?.url ? detectFormatByEndpoint(new URL(request.url).pathname, body) : null,
+      sourceFormatOverride: request?.url
+        ? resolveSourceFormat({ pathname: new URL(request.url).pathname, body })
+        : resolveSourceFormat({ pathname: null, body }),
       onCredentialsRefreshed: async (newCreds) => {
         await updateProviderCredentials(credentials.connectionId, {
           ...newCreds,
@@ -280,8 +287,16 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
     const { shouldFallback } = await markAccountUnavailable(credentials.connectionId, result.status, result.error, provider, model, result.resetsAtMs);
 
     if (shouldFallback) {
-      log.warn("AUTH", `Account ${credentials.connectionName} unavailable (${result.status}), trying fallback`);
-      excludeConnectionIds.add(credentials.connectionId);
+      const action = handlePassthroughRetryAfterFallback({
+        aggressiveRetry: compatibleAggressiveRetry,
+        provider,
+        excludeConnectionIds,
+        connectionId: credentials.connectionId,
+        result,
+        log,
+        tag: "CHAT",
+      });
+      if (action === "return") return result.response;
       lastError = result.error;
       lastStatus = result.status;
       continue;

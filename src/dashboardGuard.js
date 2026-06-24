@@ -85,9 +85,26 @@ const LOCAL_ONLY_PATHS = [
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
+/** Normalize Host / x-9r-real-ip values (incl. IPv6 and IPv4-mapped IPv6). */
+function normalizeLoopbackPeer(h) {
+  if (!h || typeof h !== "string") return "";
+  let s = h.trim().toLowerCase();
+  if (s.startsWith("[")) {
+    const end = s.indexOf("]");
+    return end >= 0 ? s.slice(1, end) : s.replace(/^\[|\]$/g, "");
+  }
+  if (s.startsWith("::ffff:")) s = s.slice("::ffff:".length);
+  if (!s.includes(":")) return s;
+  const colonCount = (s.match(/:/g) || []).length;
+  // Bare or embedded IPv6 (e.g. ::1, 2001:db8::1) — do not strip as host:port.
+  if (colonCount > 1 || s.startsWith("::")) return s;
+  // hostname:port or ipv4:port
+  return s.split(":")[0];
+}
+
 function isLoopbackHostname(h) {
-  if (!h) return false;
-  const name = h.split(":")[0].replace(/^\[|\]$/g, "").toLowerCase();
+  const name = normalizeLoopbackPeer(h);
+  if (!name) return false;
   return LOOPBACK_HOSTS.has(name);
 }
 
@@ -169,6 +186,8 @@ function isPublicApi(pathname) {
 
 export const __test__ = {
   isLocalRequest,
+  isLoopbackHostname,
+  normalizeLoopbackPeer,
   isPublicLlmApi,
   extractApiKey,
   canAccessPublicLlmApi,

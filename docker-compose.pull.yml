@@ -1,0 +1,11 @@
+# Run published image instead of building locally.
+#   docker compose -f docker-compose.yml -f docker-compose.pull.yml up -d
+#
+# Pull published image (no local build).
+#   docker compose -f docker-compose.yml -f docker-compose.pull.yml up -d
+# Default image: abwebplode/proxyroute:latest (override with IMAGE=... in .env)
+
+services:
+  9router:
+    build: !reset null
+    image: ${IMAGE:-abwebplode/proxyroute}:${IMAGE_TAG:-latest}

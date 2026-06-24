@@ -12,6 +12,10 @@ import { errorResponse, unavailableResponse } from "open-sse/utils/error.js";
 import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
 import * as log from "../utils/logger.js";
 import { updateProviderCredentials, checkAndRefreshToken } from "../services/tokenRefresh.js";
+import {
+  resolveAggressiveRetryForProvider,
+  handlePassthroughRetryAfterFallback,
+} from "@/sse/services/compatibleRetry.js";
 
 /**
  * Handle embeddings request for the SSE/Next.js server.
@@ -72,6 +76,7 @@ export async function handleEmbeddings(request) {
   }
 
   const { provider, model } = modelInfo;
+  const aggressiveRetry = await resolveAggressiveRetryForProvider(provider);
 
   if (modelStr !== `${provider}/${model}`) {
     log.info("ROUTING", `${modelStr} → ${provider}/${model}`);
@@ -129,8 +134,16 @@ export async function handleEmbeddings(request) {
     const { shouldFallback } = await markAccountUnavailable(credentials.connectionId, result.status, result.error, provider, model);
 
     if (shouldFallback) {
-      log.warn("AUTH", `Account ${credentials.connectionName} unavailable (${result.status}), trying fallback`);
-      excludeConnectionIds.add(credentials.connectionId);
+      const action = handlePassthroughRetryAfterFallback({
+        aggressiveRetry,
+        provider,
+        excludeConnectionIds,
+        connectionId: credentials.connectionId,
+        result,
+        log,
+        tag: "EMBEDDINGS",
+      });
+      if (action === "return") return result.response;
       lastError = result.error;
       lastStatus = result.status;
       continue;

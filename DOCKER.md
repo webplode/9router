@@ -6,7 +6,51 @@ Run 9Router in a container. Published image: [`decolua/9router`](https://hub.doc
 
 # 👤 For Users
 
-## Quick start
+## Persistent Docker Compose stack (recommended)
+
+Build from this repo (or use the pull override) with a **named volume** so SQLite, settings, OAuth tokens, and certs survive restart, rebuild, and `docker compose up`:
+
+```bash
+# From repo root (9router/)
+docker compose up -d --build
+```
+
+- UI: http://localhost:20128
+- Data volume: `9router-data` → container `/app/data` (`DATA_DIR`)
+- Policy: `restart: unless-stopped`
+
+**Use published image (no local build):**
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.pull.yml up -d
+```
+
+**Rebuild app, keep data:**
+
+```bash
+docker compose up -d --build
+# volume 9router-data is unchanged
+```
+
+**Stop without deleting data:**
+
+```bash
+docker compose down
+# do NOT use: docker compose down -v   # -v removes named volumes
+```
+
+**Bind mount instead of named volume** (edit `docker-compose.yml`): comment `9router-data:` volume line and use:
+
+```yaml
+volumes:
+  - ./data/9router:/app/data
+```
+
+Host path then mirrors `DOCKER.md` layout: `db/data.sqlite`, `jwt-secret`, `mitm/`, etc.
+
+Optional env: copy `.env.docker.example` → `.env` and set `PORT`.
+
+## Quick start (single `docker run`)
 
 ```bash
 docker run -d \
@@ -104,10 +148,19 @@ docker rm -f 9router
 
 # 🛠 For Developers
 
+## Why builds feel slow
+
+Docker build time is mostly:
+
+1. **`npm install`** — full dependency tree (Next, React, Monaco, optional native packages, etc.).
+2. **`npm run build`** — Next.js **webpack** production compile (dashboard + all API routes).
+
+The Dockerfile installs `python3`, `make`, `g++`, and `linux-headers` in the builder stage so optional native modules such as `better-sqlite3` and platform packages can compile on multi-arch builds. The final runtime image copies the Next **standalone** output, not the full builder toolchain. Rebuilds are faster with BuildKit cache (`--mount=type=cache` on npm). Use **`docker compose build`** only when code changes; data volume is unchanged.
+
 ## Build image locally (test)
 
 ```bash
-cd app && docker build -t 9router .
+docker build -t 9router .
 
 docker run --rm -p 20128:20128 \
   -v "$HOME/.9router:/app/data" \

@@ -20,6 +20,8 @@ export default {
   hasOAuth: true,
   transport: {
     baseUrl: "https://api.x.ai/v1/chat/completions",
+    format: "openai-responses",
+    forceStream: true,
     validateUrl: "https://api.x.ai/v1/models",
     responsesUrl: "https://api.x.ai/v1/responses",
     clientId: "b1a00492-073a-47ea-816f-4c329264a828",

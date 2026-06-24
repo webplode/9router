@@ -6,6 +6,7 @@ import { Card, Button, Modal } from "@/shared/components";
 import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
 import { getProviderAlias } from "@/shared/constants/providers";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
+import ImportModelsFromProviderButton from "@/shared/components/ImportModelsFromProviderButton";
 
 // ── ModelRow ───────────────────────────────────────────────────
 export function ModelRow({ model, fullModel, copied, onCopy, testStatus, isCustom, isFree, onDeleteAlias, onTest, isTesting }) {
@@ -158,12 +159,12 @@ export default function ModelsCard({ providerId, kindFilter, providerAliasOverri
     } catch (e) { console.log("delete alias error:", e); }
   };
 
-  const handleAddCustomModel = async (modelId) => {
+  const handleAddCustomModel = async (modelId, type = effectiveType, providerAliasArg = providerAlias) => {
     try {
       const res = await fetch("/api/models/custom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerAlias, id: modelId, type: effectiveType }),
+        body: JSON.stringify({ providerAlias: providerAliasArg, id: modelId, type }),
       });
       if (res.ok) {
         await fetchData();
@@ -272,6 +273,17 @@ export default function ModelsCard({ providerId, kindFilter, providerAliasOverri
             <span className="material-symbols-outlined text-sm">add</span>
             Add Model
           </button>
+          <ImportModelsFromProviderButton
+            connections={connections}
+            providerStorageAlias={providerAlias}
+            providerId={providerId}
+            onAddCustomModel={handleAddCustomModel}
+            getExistingModelIds={() => [
+              ...myCustomModels.map((m) => m.id),
+              ...builtInModels.map((m) => m.id),
+            ]}
+            type={effectiveType}
+          />
         </div>
       </Card>
 

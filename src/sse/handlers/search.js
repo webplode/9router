@@ -13,6 +13,10 @@ import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
 import * as log from "../utils/logger.js";
 import { updateProviderCredentials, checkAndRefreshToken } from "../services/tokenRefresh.js";
 import { handleComboChat, getComboModelsFromData } from "open-sse/services/combo.js";
+import {
+  resolveAggressiveRetryForProvider,
+  handlePassthroughRetryAfterFallback,
+} from "@/sse/services/compatibleRetry.js";
 
 /**
  * Handle web search request for the SSE/Next.js server.
@@ -143,6 +147,8 @@ async function handleSingleProviderSearch(body, providerInput, request, apiKey, 
     return result.response;
   }
 
+  const aggressiveRetry = await resolveAggressiveRetryForProvider(providerId);
+
   // Credential + fallback loop
   const excludeConnectionIds = new Set();
   let lastError = null;
@@ -194,8 +200,16 @@ async function handleSingleProviderSearch(body, providerInput, request, apiKey, 
     const { shouldFallback } = await markAccountUnavailable(credentials.connectionId, result.status, result.error, providerId);
 
     if (shouldFallback) {
-      log.warn("AUTH", `Account ${credentials.connectionName} unavailable (${result.status}), trying fallback`);
-      excludeConnectionIds.add(credentials.connectionId);
+      const action = handlePassthroughRetryAfterFallback({
+        aggressiveRetry,
+        provider: providerId,
+        excludeConnectionIds,
+        connectionId: credentials.connectionId,
+        result,
+        log,
+        tag: "SEARCH",
+      });
+      if (action === "return") return result.response;
       lastError = result.error;
       lastStatus = result.status;
       continue;

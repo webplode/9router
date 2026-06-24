@@ -244,4 +244,14 @@ describe("dashboard guard helpers", () => {
 
     expect(__test__.extractApiKey(apiRequest)).toBe("bearer-key");
   });
+
+  it("treats IPv6 loopback peer IPs as local", () => {
+    for (const realIp of ["::1", "::ffff:127.0.0.1", "[::1]"]) {
+      expect(__test__.isLoopbackHostname(realIp)).toBe(true);
+    }
+    expect(__test__.isLocalRequest(request("/v1/messages", {
+      host: "localhost:20128",
+      "x-9r-real-ip": "::1",
+    }))).toBe(true);
+  });
 });

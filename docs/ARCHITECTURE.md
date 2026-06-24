@@ -98,11 +98,13 @@ Main directories:
 - `src/app/api/*` for management/configuration APIs
 - Next rewrites in `next.config.mjs` map `/v1/*` to `/api/v1/*`
 
-Important compatibility routes:
+Important compatibility routes (thin handlers → `open-sse/handlers/v1RouteBootstrap.js` → `handleChat`):
 
 - `src/app/api/v1/chat/completions/route.js`
 - `src/app/api/v1/messages/route.js`
 - `src/app/api/v1/responses/route.js`
+
+Inbound client format: `open-sse/handlers/pipeline.js` `resolveSourceFormat` (endpoint-first, then body). See `docs/cli-proxyapi-port-notes.md`.
 - `src/app/api/v1/models/route.js`
 - `src/app/api/v1/messages/count_tokens/route.js`
 - `src/app/api/v1beta/models/route.js`
