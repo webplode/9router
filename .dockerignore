@@ -30,3 +30,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# Large / non-runtime trees (keep build context small → faster upload + fewer cache busts)
+reference-projects
+CLIProxyAPI
+.pi
+.gitbook
+tests
+**/*.test.js
+**/*.test.ts
+VITEST_*.md
+VITEST_*.json
+open-sse.old
+
+# Docs / misc not needed for next build
+*.md
+!README.md
+docs
+images
+skills
+cli
+

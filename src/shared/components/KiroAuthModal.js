@@ -15,6 +15,9 @@ export default function KiroAuthModal({ isOpen, onMethodSelect, onClose }) {
   const [refreshToken, setRefreshToken] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiKeyRegion, setApiKeyRegion] = useState("us-east-1");
+  const [ssoBearerToken, setSsoBearerToken] = useState("");
+  const [ssoRegion, setSsoRegion] = useState("us-east-1");
+  const [importJson, setImportJson] = useState("");
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
   const [autoDetecting, setAutoDetecting] = useState(false);
@@ -136,6 +139,55 @@ export default function KiroAuthModal({ isOpen, onMethodSelect, onClose }) {
     onMethodSelect("social", { provider });
   };
 
+  const handleSsoTokenImport = async () => {
+    if (!ssoBearerToken.trim()) {
+      setError("Please enter the SSO bearer token");
+      return;
+    }
+    setImporting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/oauth/kiro/sso-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bearerToken: ssoBearerToken.trim(),
+          region: ssoRegion.trim() || "us-east-1",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      onMethodSelect("sso-token");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleImportJson = async () => {
+    if (!importJson.trim()) {
+      setError("Please paste the Kiro credential JSON");
+      return;
+    }
+    setImporting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/oauth/kiro/import-json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ json: importJson.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+      onMethodSelect("import-json");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} title="Connect Kiro" onClose={onClose} size="lg">
       <div className="flex flex-col gap-4">
@@ -173,6 +225,22 @@ export default function KiroAuthModal({ isOpen, onMethodSelect, onClose }) {
                   <h3 className="font-semibold mb-1">AWS IAM Identity Center</h3>
                   <p className="text-sm text-text-muted">
                     For enterprise users with custom AWS IAM Identity Center.
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Microsoft 365 / Entra ID (external IdP) */}
+            <button
+              onClick={() => onMethodSelect("external-idp")}
+              className="w-full p-4 text-left border border-border rounded-lg hover:bg-sidebar transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-primary mt-0.5">workspaces</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Microsoft 365 / Entra ID</h3>
+                  <p className="text-sm text-text-muted">
+                    Enterprise sign-in — paste callback URLs (works on homelab-alma; no localhost:3128 needed).
                   </p>
                 </div>
               </div>
@@ -237,6 +305,38 @@ export default function KiroAuthModal({ isOpen, onMethodSelect, onClose }) {
                   <h3 className="font-semibold mb-1">Import Token</h3>
                   <p className="text-sm text-text-muted">
                     Paste refresh token from Kiro IDE.
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* SSO Token (automated import fallback) */}
+            <button
+              onClick={() => handleMethodSelect("sso-token")}
+              className="w-full p-4 text-left border border-border rounded-lg hover:bg-sidebar transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-primary mt-0.5">key_vertical</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">SSO Token (fallback)</h3>
+                  <p className="text-sm text-text-muted">
+                    Paste an AWS SSO bearer token for headless device-code import.
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Import JSON (kiro-login-helper.py output) */}
+            <button
+              onClick={() => handleMethodSelect("import-json")}
+              className="w-full p-4 text-left border border-border rounded-lg hover:bg-sidebar transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <span className="material-symbols-outlined text-primary mt-0.5">description</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Import JSON</h3>
+                  <p className="text-sm text-text-muted">
+                    Paste a kiro-login-helper.py credential JSON (access/refresh tokens + profile ARN). Best for homelab/remote.
                   </p>
                 </div>
               </div>
@@ -397,6 +497,103 @@ export default function KiroAuthModal({ isOpen, onMethodSelect, onClose }) {
             <div className="flex gap-2">
               <Button onClick={() => handleSocialLogin("github")} fullWidth>
                 Continue with GitHub
+              </Button>
+              <Button onClick={handleBack} variant="ghost" fullWidth>
+                Back
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Import JSON */}
+        {selectedMethod === "import-json" && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex gap-2">
+                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Paste the Kiro credential JSON produced by kiro-login-helper.py (or exported
+                  from another 9router instance). It already contains access/refresh tokens,
+                  profile ARN, and IdP metadata — no browser callback required.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Credential JSON <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={importJson}
+                onChange={(e) => setImportJson(e.target.value)}
+                placeholder={'{\n  "access_token": "...",\n  "refresh_token": "...",\n  "profile_arn": "arn:aws:codewhisperer:...",\n  ...\n}'}
+                rows={12}
+                className="w-full font-mono text-xs p-2 border border-border rounded-lg bg-transparent focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button onClick={handleImportJson} fullWidth disabled={importing || !importJson.trim()}>
+                {importing ? "Importing..." : "Import JSON"}
+              </Button>
+              <Button onClick={handleBack} variant="ghost" fullWidth>
+                Back
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* SSO Token */}
+        {selectedMethod === "sso-token" && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex gap-2">
+                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Paste the AWS SSO bearer token (x-amz-sso_authn) from the SSO portal.
+                  This drives the device-code flow headlessly as a fallback when the
+                  interactive Microsoft 365 browser flow isn&apos;t available.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                SSO Bearer Token <span className="text-red-500">*</span>
+              </label>
+              <Input
+                value={ssoBearerToken}
+                onChange={(e) => setSsoBearerToken(e.target.value)}
+                placeholder="Paste your AWS SSO bearer token..."
+                className="font-mono text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">AWS Region</label>
+              <Input
+                value={ssoRegion}
+                onChange={(e) => setSsoRegion(e.target.value)}
+                placeholder="us-east-1"
+                className="font-mono text-sm"
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button onClick={handleSsoTokenImport} fullWidth disabled={importing || !ssoBearerToken.trim()}>
+                {importing ? "Importing..." : "Import SSO Token"}
               </Button>
               <Button onClick={handleBack} variant="ghost" fullWidth>
                 Back

@@ -307,7 +307,35 @@ export async function refreshKiroToken(refreshToken, providerSpecificData, log, 
   const authMethod = providerSpecificData?.authMethod;
   const clientId = providerSpecificData?.clientId;
   const clientSecret = providerSpecificData?.clientSecret;
+  const tokenEndpoint = providerSpecificData?.tokenEndpoint;
   const region = providerSpecificData?.region;
+
+  // External-IdP (M365/Entra): form-encoded refresh_token grant at the
+  // discovered IdP token endpoint. Must come BEFORE the clientId/clientSecret
+  // branch (external_idp has clientId but NO clientSecret; if we fell through
+  // to the social/Cognito branch, refresh would hit the wrong endpoint and
+  // the expired token would never be replaced → 403 Invalid bearer token).
+  if (authMethod === "external_idp" && tokenEndpoint) {
+    const { KiroService } = await import("../../../src/lib/oauth/services/kiro.js");
+    try {
+      const result = await new KiroService().refreshExternalIdpToken(refreshToken, providerSpecificData);
+      log?.info?.("TOKEN_REFRESH", "Successfully refreshed Kiro external-IdP token", {
+        hasNewAccessToken: !!result.accessToken,
+        expiresIn: result.expiresIn,
+      });
+      return {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken || refreshToken,
+        expiresIn: result.expiresIn,
+        ...(await resolveKiroProfileArnPatch(providerSpecificData, result.accessToken, result.profileArn)),
+      };
+    } catch (err) {
+      log?.error?.("TOKEN_REFRESH", "Failed to refresh Kiro external-IdP token", {
+        error: err.message,
+      });
+      return null;
+    }
+  }
 
   if (clientId && clientSecret) {
     const isIDC = authMethod === "idc";

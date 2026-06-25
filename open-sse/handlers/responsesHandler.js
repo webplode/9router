@@ -4,10 +4,24 @@
  */
 
 import { handleChatCore } from "./chatCore.js";
-import { convertResponsesApiFormat } from "../translator/formats/responsesApi.js";
+import { convertResponsesApiFormat, normalizeResponsesApiParameters } from "../translator/formats/responsesApi.js";
+import { FORMATS } from "../translator/formats.js";
+import { getTargetFormat } from "../services/provider.js";
 import { createResponsesApiTransformStream } from "../transformer/responsesTransformer.js";
 import { convertResponsesStreamToJson } from "../transformer/streamToJsonConverter.js";
 import { SSE_HEADERS_CORS } from "../utils/sseConstants.js";
+
+export function prepareResponsesBodyForChatCore(body, modelInfo) {
+  const targetFormat = getTargetFormat(modelInfo?.provider);
+  const dispatchBody = targetFormat === FORMATS.OPENAI_RESPONSES
+    ? normalizeResponsesApiParameters(body)
+    : convertResponsesApiFormat(body);
+
+  if (dispatchBody.stream === undefined) {
+    dispatchBody.stream = false;
+  }
+  return dispatchBody;
+}
 
 /**
  * Handle /v1/responses request
@@ -23,8 +37,7 @@ import { SSE_HEADERS_CORS } from "../utils/sseConstants.js";
  * @returns {Promise<{success: boolean, response?: Response, status?: number, error?: string}>}
  */
 export async function handleResponsesCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, connectionId }) {
-  // Convert Responses API format to Chat Completions format
-  const convertedBody = convertResponsesApiFormat(body);
+  const convertedBody = prepareResponsesBodyForChatCore(body, modelInfo);
 
   // Preserve client's stream preference (matches OpenClaw behavior)
   // Default to false if omitted: Boolean(undefined) = false
@@ -96,4 +109,3 @@ export async function handleResponsesCore({ body, modelInfo, credentials, log, o
   // Case 3: Non-SSE response (error or non-streaming from provider) - return as-is
   return result;
 }
-

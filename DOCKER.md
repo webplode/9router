@@ -155,7 +155,9 @@ Docker build time is mostly:
 1. **`npm install`** — full dependency tree (Next, React, Monaco, optional native packages, etc.).
 2. **`npm run build`** — Next.js **webpack** production compile (dashboard + all API routes).
 
-The Dockerfile installs `python3`, `make`, `g++`, and `linux-headers` in the builder stage so optional native modules such as `better-sqlite3` and platform packages can compile on multi-arch builds. The final runtime image copies the Next **standalone** output, not the full builder toolchain. Rebuilds are faster with BuildKit cache (`--mount=type=cache` on npm). Use **`docker compose build`** only when code changes; data volume is unchanged.
+The Dockerfile installs `python3`, `make`, `g++`, and `linux-headers` in the builder stage so optional native modules such as `better-sqlite3` and platform packages can compile on multi-arch builds. The final runtime image copies the Next **standalone** output, not the full builder toolchain.
+
+**Faster image builds:** `.dockerignore` excludes `reference-projects/`, `CLIProxyAPI/`, `tests/`, etc. The Dockerfile uses `npm ci`, npm cache mount, `.next/cache` mount, and `scripts/docker-push-proxyroute.sh` pushes to registry cache `abwebplode/proxyroute:buildcache`. On Apple Silicon, **amd64** is built via QEMU and is much slower than **arm64** — for homelab arm64 only: `PLATFORMS=linux/arm64 bash scripts/docker-push-proxyroute.sh`. Use **`docker compose build`** only when code changes; data volume is unchanged.
 
 ## Build image locally (test)
 

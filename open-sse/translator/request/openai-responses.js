@@ -6,7 +6,7 @@
  */
 import { register } from "../index.js";
 import { FORMATS } from "../formats.js";
-import { normalizeResponsesInput } from "../formats/responsesApi.js";
+import { normalizeResponsesApiParameters, normalizeResponsesInput } from "../formats/responsesApi.js";
 import { ROLE, OPENAI_BLOCK, RESPONSES_ITEM } from "../schema/index.js";
 
 // Responses API enforces max 64 chars on call_id (#393)
@@ -207,7 +207,7 @@ function normalizeToolParameters(params) {
  */
 export function openaiToOpenAIResponsesRequest(model, body, stream, credentials) {
   // Body already in Responses API format (e.g. Cursor CLI calling /chat/completions with input[])
-  if (body.input) return { ...body, model, stream: true };
+  if (body.input) return normalizeResponsesApiParameters({ ...body, model, stream: true });
 
   const result = {
     model,
@@ -314,10 +314,12 @@ export function openaiToOpenAIResponsesRequest(model, body, stream, credentials)
 
   // Pass through other relevant fields
   if (body.temperature !== undefined) result.temperature = body.temperature;
+  if (body.max_output_tokens !== undefined) result.max_output_tokens = body.max_output_tokens;
+  if (body.max_completion_tokens !== undefined) result.max_completion_tokens = body.max_completion_tokens;
   if (body.max_tokens !== undefined) result.max_tokens = body.max_tokens;
   if (body.top_p !== undefined) result.top_p = body.top_p;
 
-  return result;
+  return normalizeResponsesApiParameters(result);
 }
 
 // Register both directions

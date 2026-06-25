@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import OAuthModal from "./OAuthModal";
 import KiroAuthModal from "./KiroAuthModal";
 import KiroSocialOAuthModal from "./KiroSocialOAuthModal";
+import KiroExternalIdpOAuthModal from "./KiroExternalIdpOAuthModal";
 
 /**
  * Kiro OAuth Wrapper
@@ -27,8 +28,14 @@ export default function KiroOAuthWrapper({ isOpen, providerInfo, onSuccess, onCl
       // Use social login with manual callback
       setAuthMethod("social");
       setSocialProvider(config.provider);
-    } else if (method === "import" || method === "api-key") {
-      // Import / API-key handled in KiroAuthModal, just close
+    } else if (method === "external-idp") {
+      setAuthMethod("external-idp");
+    } else if (
+      method === "import" ||
+      method === "api-key" ||
+      method === "sso-token" ||
+      method === "import-json"
+    ) {
       onSuccess?.();
     }
   }, [onSuccess]);
@@ -50,7 +57,13 @@ export default function KiroOAuthWrapper({ isOpen, providerInfo, onSuccess, onCl
     setAuthMethod(null);
     setIdcConfig(null);
     onSuccess?.();
-    onClose?.(); // Close modal after success
+    onClose?.();
+  };
+
+  const handleExternalIdpSuccess = () => {
+    setAuthMethod(null);
+    onSuccess?.();
+    onClose?.();
   };
 
   // Show method selection first
@@ -78,13 +91,22 @@ export default function KiroOAuthWrapper({ isOpen, providerInfo, onSuccess, onCl
     );
   }
 
-  // Show social login flow (Google/GitHub with manual callback)
   if (authMethod === "social" && socialProvider) {
     return (
       <KiroSocialOAuthModal
         isOpen={isOpen}
         provider={socialProvider}
         onSuccess={handleSocialSuccess}
+        onClose={handleBack}
+      />
+    );
+  }
+
+  if (authMethod === "external-idp") {
+    return (
+      <KiroExternalIdpOAuthModal
+        isOpen={isOpen}
+        onSuccess={handleExternalIdpSuccess}
         onClose={handleBack}
       />
     );

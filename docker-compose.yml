@@ -16,11 +16,14 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-20128}:20128"
+      # Kiro M365/Entra external-IdP loopback (browser on host must reach localhost:3128)
+      - "3128:3128"
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 20128
       DATA_DIR: /app/data
+      KIRO_EXTERNAL_IDP_BIND: "0.0.0.0"
       NEXT_TELEMETRY_DISABLED: "1"
       # Optional: DEBUG=true
       # Optional Headroom sidecar: HEADROOM_URL=http://headroom:8787
@@ -39,7 +42,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    networks:
+      - default
+      - sub2api_sub2api-network
 
 volumes:
   9router-data:
     name: 9router-data
+
+networks:
+  sub2api_sub2api-network:
+    external: true
+    name: sub2api_sub2api-network

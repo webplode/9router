@@ -60,4 +60,34 @@ describe("OpenAI → Codex Responses (reverse)", () => {
     const fc = out.input.find((i) => i.type === "function_call");
     expect(fc.call_id.length).toBeLessThanOrEqual(64);
   });
+
+  it("maps max_tokens to Responses max_output_tokens", () => {
+    const out = O2R({
+      max_tokens: 123,
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(out.max_output_tokens).toBe(123);
+    expect(out.max_tokens).toBeUndefined();
+  });
+
+  it("maps max_completion_tokens to Responses max_output_tokens", () => {
+    const out = O2R({
+      max_completion_tokens: 456,
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(out.max_output_tokens).toBe(456);
+    expect(out.max_completion_tokens).toBeUndefined();
+  });
+
+  it("keeps explicit max_output_tokens and strips Chat-only token aliases", () => {
+    const out = O2R({
+      max_output_tokens: 789,
+      max_tokens: 123,
+      max_completion_tokens: 456,
+      messages: [{ role: "user", content: "hi" }],
+    });
+    expect(out.max_output_tokens).toBe(789);
+    expect(out.max_tokens).toBeUndefined();
+    expect(out.max_completion_tokens).toBeUndefined();
+  });
 });

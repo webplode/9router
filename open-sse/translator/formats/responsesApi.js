@@ -24,6 +24,27 @@ export function normalizeResponsesInput(input) {
 }
 
 /**
+ * Normalize token-limit aliases before forwarding to a Responses API upstream.
+ * Chat Completions clients commonly send max_tokens or max_completion_tokens,
+ * but Responses accepts max_output_tokens instead.
+ */
+export function normalizeResponsesApiParameters(body) {
+  if (!body || typeof body !== "object") return body;
+
+  const result = { ...body };
+  if (result.max_output_tokens === undefined) {
+    if (result.max_completion_tokens !== undefined) {
+      result.max_output_tokens = result.max_completion_tokens;
+    } else if (result.max_tokens !== undefined) {
+      result.max_output_tokens = result.max_tokens;
+    }
+  }
+  delete result.max_tokens;
+  delete result.max_completion_tokens;
+  return result;
+}
+
+/**
  * Convert OpenAI Responses API format to standard chat completions format
  * Responses API uses: { input: [...], instructions: "..." }
  * Chat API uses: { messages: [...] }
@@ -132,6 +153,10 @@ export function convertResponsesApiFormat(body) {
   }
 
   // Cleanup Responses API specific fields
+  if (result.max_output_tokens !== undefined) {
+    if (result.max_tokens === undefined) result.max_tokens = result.max_output_tokens;
+    delete result.max_output_tokens;
+  }
   delete result.input;
   delete result.instructions;
   delete result.include;
